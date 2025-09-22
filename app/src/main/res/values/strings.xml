@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Note Taker</string>
+    <string name="title_label">Title Label</string>
+    <string name="body_label">Body Label</string>
+    <string name="created_by">Created By</string>
+    <string name="creation_date">Creation Date</string>
+    <string name="add_note">Add Note</string>
+    <string name="modification_date">Modification Date</string>
+    <string name="save_note">Save Note</string>
+    <string name="back">Back</string>
+</resources>
