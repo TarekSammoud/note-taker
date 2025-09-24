@@ -33,6 +33,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import fr.eseo.ld.ts.notetaker.model.Note
+import fr.eseo.ld.ts.notetaker.ui.viewmodels.NoteTakerViewModel
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -41,15 +42,35 @@ import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-public fun DetailsScreen(navController: NavController,note: Note?)
+public fun DetailsScreen(navController: NavController,noteId : String,
+                         viewModel : NoteTakerViewModel
+)
 {
+    val note by viewModel.note.collectAsState()
     var title by remember { mutableStateOf(note?.title ?: "") }
     var body by remember {mutableStateOf(note?.body ?: "")}
     var author by remember {mutableStateOf(note?.author ?: "")}
-    var id by remember {mutableStateOf(note?.id ?: "")}
-    var creationDate by remember { mutableStateOf(note?.creationDate ?: LocalDateTime.now()) }
-    var modificationDate by remember { mutableStateOf(note?.modificationDate ?: LocalDateTime.now()) }
+    var id by remember {mutableStateOf(note?.id)}
+    val date = LocalDateTime.now()
 
+    LaunchedEffect(noteId, note) {
+        if(noteId == "NEW") {
+            id = null;
+            title = ""
+            body = ""
+            author = "Bob"
+        }
+        else {
+            viewModel.getNoteById(noteId)
+            note?.let {
+                    note ->
+                id = note.id
+                title = note.title
+                body = note.body
+                author = note.author
+            }
+        }
+    }
 
     Surface(
         modifier = Modifier
@@ -79,7 +100,19 @@ public fun DetailsScreen(navController: NavController,note: Note?)
                     },
                     actions = {
                         IconButton(
-                            onClick = {}
+                            onClick = {
+                                val newNote = Note(
+                                    creationDate = note?.creationDate ?: date,
+                                    modificationDate = date,
+                                    author = author,
+                                    body =body,
+                                    title = title,
+                                    id = note?.id ?: createId(date)
+                                )
+                                viewModel.addOrUpdateNote(newNote)
+                                navController.navigateUp()
+
+                            }
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.Done,
@@ -96,8 +129,8 @@ public fun DetailsScreen(navController: NavController,note: Note?)
                     title = title,
                     body = body,
                     author = author,
-                    creationDate = creationDate ,
-                    modificationDate = modificationDate ,
+                    creationDate =  note?.creationDate ?: date ,
+                    modificationDate = note?.modificationDate ?: date ,
                     onBodyChange = {body = it},
                     onTitleChange = {title = it},
                     modifier = Modifier.padding(innerPadding)
@@ -195,4 +228,9 @@ private fun displayDate(date : LocalDateTime, since : Boolean) : String {
         display = display.plus(" (${daysAgo} days ago)")
     }
     return display
+}
+
+private fun createId(date:LocalDateTime) : String {
+    val formatter = DateTimeFormatter.ofPattern("yyMMddhhmmss")
+    return formatter.format(date)
 }

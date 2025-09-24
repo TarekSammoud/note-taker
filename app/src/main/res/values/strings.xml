@@ -8,4 +8,8 @@
     <string name="modification_date">Modification Date</string>
     <string name="save_note">Save Note</string>
     <string name="back">Back</string>
+    <string name="dismiss_delete">Dismiss delete</string>
+    <string name="confirm_delete">Confirm Delete</string>
+    <string name="delete_confirm">Delete Confirm</string>
+    <string name="delete_note">Delete Note</string>
 </resources>

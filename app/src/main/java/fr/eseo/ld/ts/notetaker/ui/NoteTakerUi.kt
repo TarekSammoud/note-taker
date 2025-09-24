@@ -3,32 +3,50 @@ package fr.eseo.ld.ts.notetaker.ui
 import fr.eseo.ld.ts.notetaker.ui.screens.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import fr.eseo.ld.ts.notetaker.model.Note
+import fr.eseo.ld.ts.notetaker.repositories.NoteTakerRepositoryListImpl
 import fr.eseo.ld.ts.notetaker.ui.navigation.NoteTakerScreens
 import fr.eseo.ld.ts.notetaker.ui.screens.addNotes
+import fr.eseo.ld.ts.notetaker.ui.viewmodels.NoteTakerViewModel
+import fr.eseo.ld.ts.notetaker.ui.viewmodels.NoteTakerViewModelFactory
 import java.time.LocalDateTime
 
 @Composable
 public fun NoteTakerUi() {
-    val notes = remember { mutableListOf<Note>().apply { addNotes(this) } }
     val navController = rememberNavController()
+    val viewModel : NoteTakerViewModel = viewModel(
+        factory = NoteTakerViewModelFactory(
+            NoteTakerRepositoryListImpl()
+        )
+    )
 
     NavHost(
         navController = navController,
         startDestination = NoteTakerScreens.SUMMARY_SCREEN.name
     ) {
         composable(NoteTakerScreens.SUMMARY_SCREEN.name) {
-            SummaryScreen(notes = notes, navController = navController)
+            SummaryScreen(viewModel = viewModel, navController = navController)
 
         }
 
         composable (
-            NoteTakerScreens.DETAILS_SCREEN.name
+            NoteTakerScreens.DETAILS_SCREEN.name+"/{noteId}",
+            arguments = listOf(
+                navArgument("noteId") {
+                    type = NavType.StringType
+                }
+            )
         ) {
-            DetailsScreen(navController, notes.get(0))
+                backStackEntry ->
+            val noteId = backStackEntry.arguments?.getString("noteId") ?: "NEW"
+            viewModel.getNoteById(noteId)
+            DetailsScreen(navController, noteId, viewModel)
         }
 
     }
