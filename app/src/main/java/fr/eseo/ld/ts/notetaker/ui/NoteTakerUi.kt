@@ -1,8 +1,10 @@
 package fr.eseo.ld.ts.notetaker.ui
 
+import android.app.Application
 import fr.eseo.ld.ts.notetaker.ui.screens.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -11,6 +13,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import fr.eseo.ld.ts.notetaker.model.Note
 import fr.eseo.ld.ts.notetaker.repositories.NoteTakerRepositoryListImpl
+import fr.eseo.ld.ts.notetaker.repositories.NoteTakerRepositoryRoomImpl
 import fr.eseo.ld.ts.notetaker.ui.navigation.NoteTakerScreens
 import fr.eseo.ld.ts.notetaker.ui.screens.addNotes
 import fr.eseo.ld.ts.notetaker.ui.viewmodels.NoteTakerViewModel
@@ -19,10 +22,13 @@ import java.time.LocalDateTime
 
 @Composable
 public fun NoteTakerUi() {
+
+    val application = LocalContext.current.applicationContext as Application
+
     val navController = rememberNavController()
     val viewModel : NoteTakerViewModel = viewModel(
         factory = NoteTakerViewModelFactory(
-            NoteTakerRepositoryListImpl()
+            NoteTakerRepositoryRoomImpl(application)
         )
     )
 
