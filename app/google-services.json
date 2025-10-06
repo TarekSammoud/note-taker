@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "471858172043",
+    "project_id": "notetaker-2b417",
+    "storage_bucket": "notetaker-2b417.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:471858172043:android:e4605a9432da388afa848e",
+        "android_client_info": {
+          "package_name": "fr.eseo.ld.ts.notetaker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCO5JiBJhwY74GCoLFfdcNYZ8G0UWv1Z5A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

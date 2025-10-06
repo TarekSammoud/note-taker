@@ -3,9 +3,10 @@ package fr.eseo.ld.ts.notetaker.ui.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import fr.eseo.ld.ts.notetaker.repositories.NoteTakerRepository
+import fr.eseo.ld.ts.notetaker.repositories.NoteTakerRepositoryFirestoreImpl
 
 class NoteTakerViewModelFactory (
-    private val repository : NoteTakerRepository
+    private val repository : NoteTakerRepositoryFirestoreImpl
 ) : ViewModelProvider.Factory
 {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {

@@ -31,9 +31,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.HistoricalChange
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import fr.eseo.ld.ts.notetaker.model.Note
+import fr.eseo.ld.ts.notetaker.ui.viewmodels.AuthenticationViewModel
 import fr.eseo.ld.ts.notetaker.ui.viewmodels.NoteTakerViewModel
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -42,32 +45,37 @@ import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-public fun DetailsScreen(navController: NavController,noteId : String,
-                         viewModel : NoteTakerViewModel
-)
-{
+fun DetailsScreen(
+    navController: NavController,
+    noteId: String,
+    viewModel: NoteTakerViewModel,
+    authenticationViewModel: AuthenticationViewModel
+) {
     val note by viewModel.note.collectAsState()
     var title by remember { mutableStateOf(note?.title ?: "") }
-    var body by remember {mutableStateOf(note?.body ?: "")}
-    var author by remember {mutableStateOf(note?.author ?: "")}
-    var id by remember {mutableStateOf(note?.id)}
+    var body by remember { mutableStateOf(note?.body ?: "") }
+    var author by remember { mutableStateOf(note?.author ?: "") }
+    var id by remember { mutableStateOf(note?.id) }
+    var editable by remember { mutableStateOf(true) }   // Step 2: editable state
+
     val date = LocalDateTime.now()
 
     LaunchedEffect(noteId, note) {
-        if(noteId == "NEW") {
-            id = null;
+        if (noteId == "NEW") {
+            id = null
             title = ""
             body = ""
-            author = "Bob"
-        }
-        else {
+            author = authenticationViewModel.user.value?.email ?: "??"  // Step 3: set author from logged in user or fallback
+            editable = true
+        } else {
             viewModel.getNoteById(noteId)
-            note?.let {
-                    note ->
+            note?.let { note ->
                 id = note.id
                 title = note.title
                 body = note.body
                 author = note.author
+                // editable only if current user is the author
+                editable = note.author == authenticationViewModel.user.value?.email
             }
         }
     }
@@ -79,18 +87,14 @@ public fun DetailsScreen(navController: NavController,noteId : String,
         color = MaterialTheme.colorScheme.background
     ) {
         Scaffold(
-            topBar ={
+            topBar = {
                 TopAppBar(
                     title = {
-                        Text(
-                            text = stringResource(R.string.app_name)
-                        )
+                        Text(text = stringResource(R.string.app_name))
                     },
                     navigationIcon = {
                         IconButton(
-                            onClick = {
-                                navController.popBackStack()
-                            }
+                            onClick = { navController.popBackStack() }
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -100,18 +104,21 @@ public fun DetailsScreen(navController: NavController,noteId : String,
                     },
                     actions = {
                         IconButton(
+                            enabled = editable,  // Disable save if not editable
                             onClick = {
-                                val newNote = Note(
-                                    creationDate = note?.creationDate ?: date,
+                                val newNote = Note.create(
+                                    id = note?.id ?: createId(date),
+                                    creationDate = note?.creationDateLocal ?: date,
                                     modificationDate = date,
-                                    author = author,
-                                    body =body,
-                                    title = title,
-                                    id = note?.id ?: createId(date)
+                                    author = authenticationViewModel.user.value?.email ?: author,
+                                    body = body,
+                                    title = title
                                 )
-                                viewModel.addOrUpdateNote(newNote)
-                                navController.navigateUp()
 
+                                viewModel.viewModelScope.launch {
+                                    viewModel.addOrUpdate(newNote)
+                                    navController.navigateUp()
+                                }
                             }
                         ) {
                             Icon(
@@ -122,18 +129,17 @@ public fun DetailsScreen(navController: NavController,noteId : String,
                     }
                 )
             },
-            content = {
-
-                    innerPadding ->
+            content = { innerPadding ->
                 DetailsScreenNoteCard(
                     title = title,
                     body = body,
                     author = author,
-                    creationDate =  note?.creationDate ?: date ,
-                    modificationDate = note?.modificationDate ?: date ,
-                    onBodyChange = {body = it},
-                    onTitleChange = {title = it},
-                    modifier = Modifier.padding(innerPadding)
+                    creationDate = note?.creationDateLocal ?: date,
+                    modificationDate = note?.modificationDateLocal ?: date,
+                    onTitleChange = { if (editable) title = it },  // Only allow changes if editable
+                    onBodyChange = { if (editable) body = it },
+                    modifier = Modifier.padding(innerPadding),
+                    editable = editable
                 )
             }
         )
@@ -143,27 +149,29 @@ public fun DetailsScreen(navController: NavController,noteId : String,
 
 
 @Composable
-private fun DetailsScreenNoteCard(title: String,
-                                  body: String,
-                                  author: String,
-                                  creationDate: LocalDateTime,
-                                  modificationDate: LocalDateTime,
-                                  modifier: Modifier = Modifier,
-                                  onTitleChange: (String) -> Unit,
-                                  onBodyChange: (String) -> Unit
-){
+private fun DetailsScreenNoteCard(
+    title: String,
+    body: String,
+    author: String,
+    creationDate: LocalDateTime,
+    modificationDate: LocalDateTime,
+    modifier: Modifier = Modifier,
+    onTitleChange: (String) -> Unit,
+    onBodyChange: (String) -> Unit,
+    editable: Boolean       // <-- new parameter
+) {
 
     Card(
         modifier = modifier
             .fillMaxSize(),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-    )
-    {
+    ) {
         TextField(
             value = title,
             singleLine = true,
             textStyle = MaterialTheme.typography.titleLarge,
             onValueChange = onTitleChange,
+            readOnly = !editable,   // <-- set readOnly here
             label = {
                 Text(
                     text = stringResource(R.string.title_label)
@@ -180,9 +188,12 @@ private fun DetailsScreenNoteCard(title: String,
             value = body,
             textStyle = MaterialTheme.typography.bodyMedium,
             onValueChange = onBodyChange,
-            label = {Text(
-                text = stringResource(R.string.body_label)
-            )},
+            readOnly = !editable,   // <-- set readOnly here
+            label = {
+                Text(
+                    text = stringResource(R.string.body_label)
+                )
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
@@ -205,7 +216,7 @@ private fun DetailsScreenNoteCard(title: String,
                 .fillMaxWidth()
         ) {
             Text(text = stringResource(R.string.creation_date))
-            Text(text = displayDate(creationDate as LocalDateTime, true))
+            Text(text = displayDate(creationDate, true))
         }
         Row(
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -213,12 +224,12 @@ private fun DetailsScreenNoteCard(title: String,
                 .fillMaxWidth()
         ) {
             Text(text = stringResource(R.string.modification_date))
-            Text(text = displayDate(modificationDate as LocalDateTime, true))
+            Text(text = displayDate(modificationDate, true))
         }
 
     }
-
 }
+
 
 private fun displayDate(date : LocalDateTime, since : Boolean) : String {
     val formatter = DateTimeFormatter.ofPattern("dd/MM/yy hh:mm")

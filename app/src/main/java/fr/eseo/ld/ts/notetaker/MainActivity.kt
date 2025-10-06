@@ -12,10 +12,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import dagger.hilt.android.AndroidEntryPoint
 import fr.eseo.ld.ts.notetaker.ui.NoteTakerUi
 import fr.eseo.ld.ts.notetaker.ui.screens.NotesComposePreview
 import fr.eseo.ld.ts.notetaker.ui.theme.NoteTakerTheme
 
+
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

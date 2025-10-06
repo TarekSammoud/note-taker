@@ -46,6 +46,7 @@ import androidx.navigation.NavController
 import fr.eseo.ld.ts.notetaker.model.Note
 import fr.eseo.ld.ts.notetaker.ui.navigation.NoteTakerScreens
 import fr.eseo.ld.ts.notetaker.ui.theme.NoteTakerTheme
+import fr.eseo.ld.ts.notetaker.ui.viewmodels.AuthenticationViewModel
 import fr.eseo.ld.ts.notetaker.ui.viewmodels.NoteTakerViewModel
 import java.time.LocalDateTime
 
@@ -60,40 +61,31 @@ import java.time.LocalDateTime
 
 @Composable
 fun NotesComposePreview(){
-    val notes = remember { mutableListOf<Note>().apply { addNotes(this) } }
     NoteTakerTheme {
      //   SummaryScreen(notes)
     }
 }
 
-fun addNotes(notes: MutableList<Note>) {
-    notes.add(Note(
-        id = "1",
-        author = "Tarek",
-        title = "Fight Club Review",
-        body = "Fight Club is an absolute masterpiece that keeps you on the edge of your seat from start to finis are explored in such a raw, thought-provoking way. The gritty aesthetic and David Fincher's direction make this a must-watch for any film enthusiast.",
-        creationDate = LocalDateTime.now(),
-        modificationDate = LocalDateTime.now()
-    ))
-    notes.add(Note(
-        id = "2",
-        author = "Tarek",
-        title = "Inception Thoughts",
-        body = "Inception is a mind-bending dream  level offering unique visuals and stakes. Leonardo DiCaprio's performance as Cobb is gripping, and the supporting cast, including Joseph Gordon-Levitt and Marion Cotillttable. Christopher Nolan outdid himself with this one!",
-        creationDate = LocalDateTime.now().minusDays(1),
-        modificationDate = LocalDateTime.now()
-    ))
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SummaryScreen(viewModel: NoteTakerViewModel,
                   navController: NavController,
-                  modifier: Modifier= Modifier
+                  modifier: Modifier= Modifier,
+                  authenticationViewModel: AuthenticationViewModel
 ){
+
+    val user by authenticationViewModel.user.collectAsState()
+    var userConnected by remember{mutableStateOf(false)}
+
     val notes by viewModel.notes.collectAsState()
 
     var noteToDelete by remember{mutableStateOf<Note?>(null)}
+
+
+    LaunchedEffect(user) {
+        userConnected = user?.isAnonymous?.not() ?: false
+    }
 
     LaunchedEffect(Unit) {
         viewModel.refreshNotes()
@@ -122,12 +114,30 @@ fun SummaryScreen(viewModel: NoteTakerViewModel,
         Scaffold(
             topBar = {
                 TopAppBar (
+                    actions = {
+                        if(userConnected) {
+                            Button(
+                                onClick = {authenticationViewModel.logout()}
+                            ){
+                                Text(text="Log out")
+                            }
+                        } else {
+                            Button(
+                                onClick = {navController
+                                    .navigate(NoteTakerScreens.CONNECTION_SCREEN.name)}
+                            ){
+                                Text(text="Connect")
+                            }
+                        }
+
+                    },
                     title = {
                         Text(
                             text = stringResource(R.string.app_name)
                         )
                     }
                 )
+
             },
             floatingActionButton = {
                 FloatingActionButton(
